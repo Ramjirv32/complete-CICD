@@ -10,8 +10,7 @@ pipeline {
         stage("SonarQube Analysis - Backend") {
             steps {
                 dir("backend") {
-                    sh(script: '''
-                        #!/bin/bash
+                    sh '''
                         echo "Running SonarQube analysis for backend"
 
                         export NVM_DIR="$HOME/.nvm"
@@ -22,7 +21,7 @@ pipeline {
                           -Dsonar.projectKey=backend-first \
                           -Dsonar.host.url=$SONAR_HOST_URL \
                           -Dsonar.login=$SONAR_TOKEN
-                    ''', shell: 'bash')
+                    '''
                 }
             }
         }
