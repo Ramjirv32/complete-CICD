@@ -2,15 +2,20 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'https://lynx-fun-normally.ngrok-free.app'
+        SONAR_HOST_URL  = 'https://lynx-fun-normally.ngrok-free.app'
         SONAR_TOKEN     = 'sqp_15da2dada419712d578bc42619572ae7f5168f03'
         DOCKERHUB_USER  = 'ramjirv3217'
     }
 
     stages {
-        stage("Test backend using Jest") {
+        stage("Checkout Code") {
             steps {
                 checkout scm
+            }
+        }
+
+        stage("Test Backend with Jest") {
+            steps {
                 dir("backend") {
                     sh '''
                     echo "Installing backend dependencies"
@@ -23,21 +28,21 @@ pipeline {
             }
         }
 
-        stage("SonarQube Analysis Backend") {
+        stage("SonarQube Analysis - Backend") {
             steps {
                 dir("backend") {
                     sh '''
                     echo "Running SonarQube analysis for backend"
                     sonar-scanner \
+                        -Dsonar.projectKey=backend-first \
                         -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN \
-                        -Dsonar.projectKey=backend-first
+                        -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
             }
         }
 
-        stage("Test frontend and build") {
+        stage("Test Frontend and Build") {
             steps {
                 dir("frontend") {
                     sh '''
@@ -54,21 +59,21 @@ pipeline {
             }
         }
 
-        stage("SonarQube Analysis Frontend") {
+        stage("SonarQube Analysis - Frontend") {
             steps {
                 dir("frontend") {
                     sh '''
                     echo "Running SonarQube analysis for frontend"
                     sonar-scanner \
+                        -Dsonar.projectKey=frontend-first \
                         -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN \
-                        -Dsonar.projectKey=frontend-first
+                        -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
             }
         }
 
-        stage("Build and Push Backend Docker Image") {
+        stage("Build & Push Backend Docker Image") {
             steps {
                 dir("backend") {
                     withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'PASS')]) {
@@ -85,7 +90,7 @@ pipeline {
             }
         }
 
-        stage("Build and Push Frontend Docker Image") {
+        stage("Build & Push Frontend Docker Image") {
             steps {
                 dir("frontend") {
                     withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'PASS')]) {
