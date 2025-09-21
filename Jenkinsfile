@@ -1,19 +1,22 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_HOST_URL = 'https://lynx-fun-normally.ngrok-free.app'
+        SONAR_TOKEN     = 'sqp_15da2dada419712d578bc42619572ae7f5168f03'
+        DOCKERHUB_USER  = 'ramjirv3217'
+    }
+
     stages {
         stage("Test backend using Jest") {
             steps {
                 checkout scm
                 dir("backend") {
                     sh '''
-                    echo "Removing package-lock.json"
-                    rm -rf package-lock.json
-
-                    echo "Installing dependencies"
+                    echo "Installing backend dependencies"
                     npm install
 
-                    echo "Running tests"
+                    echo "Running backend tests"
                     npm run test
                     '''
                 }
@@ -26,10 +29,9 @@ pipeline {
                     sh '''
                     echo "Running SonarQube analysis for backend"
                     sonar-scanner \
-                        -Dsonar.projectKey=backend \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://your-sonarqube-server:9000 \
-                        -Dsonar.login=your_sonarqube_token
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_TOKEN \
+                        -Dsonar.projectKey=backend-first
                     '''
                 }
             }
@@ -39,13 +41,10 @@ pipeline {
             steps {
                 dir("frontend") {
                     sh '''
-                    echo "Removing package-lock.json"
-                    rm -rf package-lock.json
-
-                    echo "Installing dependencies"
+                    echo "Installing frontend dependencies"
                     npm install
 
-                    echo "Running tests"
+                    echo "Running frontend tests"
                     npm run test
 
                     echo "Building the frontend"
@@ -61,11 +60,44 @@ pipeline {
                     sh '''
                     echo "Running SonarQube analysis for frontend"
                     sonar-scanner \
-                        -Dsonar.projectKey=frontend \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://your-sonarqube-server:9000 \
-                        -Dsonar.login=your_sonarqube_token
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_TOKEN \
+                        -Dsonar.projectKey=frontend-first
                     '''
+                }
+            }
+        }
+
+        stage("Build and Push Backend Docker Image") {
+            steps {
+                dir("backend") {
+                    withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'PASS')]) {
+                        sh '''
+                        echo "Building backend Docker image"
+                        docker build -t backend-image .
+
+                        echo "$PASS" | docker login -u $DOCKERHUB_USER --password-stdin
+                        docker tag backend-image $DOCKERHUB_USER/backend-image:latest
+                        docker push $DOCKERHUB_USER/backend-image:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage("Build and Push Frontend Docker Image") {
+            steps {
+                dir("frontend") {
+                    withCredentials([string(credentialsId: 'DOCKERHUB_PASS', variable: 'PASS')]) {
+                        sh '''
+                        echo "Building frontend Docker image"
+                        docker build -t frontend-image .
+
+                        echo "$PASS" | docker login -u $DOCKERHUB_USER --password-stdin
+                        docker tag frontend-image $DOCKERHUB_USER/frontend-image:latest
+                        docker push $DOCKERHUB_USER/frontend-image:latest
+                        '''
+                    }
                 }
             }
         }
@@ -73,7 +105,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline finished"
+            echo "🚀 Pipeline finished"
         }
     }
 }
