@@ -6,6 +6,7 @@ pipeline {
         SONAR_TOKEN    = 'sqp_15da2dada419712d578bc42619572ae7f5168f03'
     }
 
+// a.
     stages {
         stage("SonarQube Analysis - Backend") {
             steps {
