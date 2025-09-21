@@ -6,17 +6,12 @@ pipeline {
         SONAR_TOKEN    = 'sqp_15da2dada419712d578bc42619572ae7f5168f03'
     }
 
-// a.
     stages {
         stage("SonarQube Analysis - Backend") {
             steps {
                 dir("backend") {
                     sh '''
                         echo "Running SonarQube analysis for backend"
-
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        nvm use 22
 
                         sonar-scanner \
                           -Dsonar.projectKey=backend-first \
@@ -30,13 +25,13 @@ pipeline {
 
     post {
         always {
-            echo " Backend SonarQube analysis completed"
-        }
-        failure {
-            echo "Backend SonarQube analysis failed"
+            echo "Backend SonarQube analysis completed"
         }
         success {
             echo "Backend SonarQube analysis succeeded"
+        }
+        failure {
+            echo "Backend SonarQube analysis failed"
         }
     }
 }
