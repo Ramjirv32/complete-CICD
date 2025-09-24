@@ -6,6 +6,9 @@ pipeline {
         DOCKER_PASS = "Kpr@23112005"
         SONAR_TOKEN = "sqa_71205c43f8c263e313ca3c193a82ed20faff52af"
         SONAR_HOST = "http://localhost:9000"
+        SSH_USER = "ubuntu"
+        SSH_HOST = "13.234.0.10"
+        SSH_KEY = "/home/ramji/Downloads/demo.pem"
     }
 
     stages {
@@ -79,11 +82,25 @@ pipeline {
             }
         }
 
-        stage("Deploy to Kubernetes") {
+        stage("Deploy to Kubernetes via SSH") {
             steps {
-                dir('k8s') {
-                    sh 'kubectl apply -f b.yaml'
-                    sh 'kubectl apply -f f.yaml'
+                script {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
+                        echo "Logging into Docker on remote server"
+                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+
+                        echo "Pulling latest backend image"
+                        docker pull ${DOCKER_USER}/backend-image:latest
+
+                        echo "Pulling latest frontend image"
+                        docker pull ${DOCKER_USER}/frontend-image:latest
+
+                        echo "Applying Kubernetes manifests"
+                        kubectl apply -f /home/ubuntu/k8/b.yaml
+                        kubectl apply -f /home/ubuntu/k8/f.yaml
+                    ENDSSH
+                    """
                 }
             }
         }
