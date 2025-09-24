@@ -85,7 +85,7 @@ pipeline {
             }
         }
 
-       stage("Deploy to Local Kubernetes") {
+  stage("Deploy to Local Kubernetes") {
     steps {
         sh '''
             echo "Pulling latest Docker images for local Kubernetes"
@@ -93,8 +93,10 @@ pipeline {
             docker pull ${DOCKER_USER}/frontend-image:latest
 
             echo "Applying Kubernetes manifests"
-            minikube kubectl -- apply -f ${K8S_MANIFEST_DIR}/b.yaml
-            minikube kubectl -- apply -f ${K8S_MANIFEST_DIR}/f.yaml
+            cd "/home/ramji/desktop/re/argo cd/k8"
+
+            minikube kubectl -- apply -f b.yaml
+            minikube kubectl -- apply -f f.yaml
 
             echo "Exposing backend and frontend services"
             minikube kubectl -- expose deployment backend --type=NodePort --port=5000 --dry-run=client -o yaml | minikube kubectl -- apply -f -
@@ -102,6 +104,7 @@ pipeline {
         '''
     }
 }
+
 
     }
 
