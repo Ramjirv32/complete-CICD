@@ -8,6 +8,27 @@ pipeline {
             }
         }
 
+    }
+    stage("Backend local test"){
+        steps{
+            dir('backend'){
+                sh 'rm -rf package-lock.json'
+                sh 'npm install'
+                sh 'npm test'
+            }
+        }
+    }
+
+    stage('Building Frontend'){
+        steps{
+            dir('frontend'){
+                sh 'rm -rf package-lock.json'
+                sh 'npm install'
+                sh 'npm run build'
+            }
+        }
+    }
+
         stage('SonarQube Analysis - Backend') {
             steps {
                 script {
@@ -39,17 +60,38 @@ pipeline {
             }
         }
 
+
+stage("building docker for backend and pushing to dockerhub"){
+    steps{
+        dir('backend'){
+            sh 'docker build -t ramjirv3217/backend-image:latest .'
+            sh 'docker login -u "ramjirv3217" -p "Kpr@23112005"'
+            sh 'docker push ramjirv3217/backend-image:latest'
+        }
+
+
     }
 
-    post {
-        always {
-            echo "Backend SonarQube stage completed"
-        }
-        success {
-            echo " Backend SonarQube analysis and Quality Gate succeeded"
-        }
-        failure {
-            echo "Backend SonarQube analysis failed"
+}
+
+stage("Building docker for frontend and pushing to dockerhub"){
+    steps{
+        dir('frontend'){
+            sh 'docker build -t ramjirv3217/frontend-image:latest .'
+            sh 'docker login -u "ramjirv3217" -p "Kpr@23112005"'
+            sh 'docker push ramjirv3217/frontend-image:latest'
         }
     }
+
+
+}
+
+
+post {
+        always {
+            cleanWs()
+        }
+    }
+
+
 }
