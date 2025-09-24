@@ -6,9 +6,7 @@ pipeline {
         DOCKER_PASS = "Kpr@23112005"
         SONAR_TOKEN = "sqa_71205c43f8c263e313ca3c193a82ed20faff52af"
         SONAR_HOST = "http://localhost:9000"
-        SSH_USER = "ubuntu"
-        SSH_HOST = "13.234.0.10"
-        SSH_KEY = "/home/ramji/Downloads/demo.pem"
+        K8S_MANIFEST_DIR = "/home/ramji/desktop/re/argo cd/k8"
     }
 
     stages {
@@ -65,9 +63,11 @@ pipeline {
         stage("Build & Push Backend Docker Image") {
             steps {
                 dir('backend') {
-                    sh 'docker build -t ${DOCKER_USER}/backend-image:latest .'
-                    sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}'
-                    sh 'docker push ${DOCKER_USER}/backend-image:latest'
+                    sh '''
+                        docker build -t ${DOCKER_USER}/backend-image:latest .
+                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+                        docker push ${DOCKER_USER}/backend-image:latest
+                    '''
                 }
             }
         }
@@ -75,33 +75,26 @@ pipeline {
         stage("Build & Push Frontend Docker Image") {
             steps {
                 dir('frontend') {
-                    sh 'docker build -t ${DOCKER_USER}/frontend-image:latest .'
-                    sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}'
-                    sh 'docker push ${DOCKER_USER}/frontend-image:latest'
+                    sh '''
+                        docker build -t ${DOCKER_USER}/frontend-image:latest .
+                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+                        docker push ${DOCKER_USER}/frontend-image:latest
+                    '''
                 }
             }
         }
 
-        stage("Deploy to Kubernetes via SSH") {
+        stage("Deploy to Local Kubernetes") {
             steps {
-                script {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
-                        echo "Logging into Docker on remote server"
-                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+                sh '''
+                    echo "Pulling latest Docker images for local Kubernetes"
+                    docker pull ${DOCKER_USER}/backend-image:latest
+                    docker pull ${DOCKER_USER}/frontend-image:latest
 
-                        echo "Pulling latest backend image"
-                        docker pull ${DOCKER_USER}/backend-image:latest
-
-                        echo "Pulling latest frontend image"
-                        docker pull ${DOCKER_USER}/frontend-image:latest
-
-                        echo "Applying Kubernetes manifests"
-                        kubectl apply -f /home/ubuntu/k8/b.yaml
-                        kubectl apply -f /home/ubuntu/k8/f.yaml
-                    ENDSSH
-                    """
-                }
+                    echo "Applying Kubernetes manifests"
+                    kubectl apply -f "${K8S_MANIFEST_DIR}/b.yaml"
+                    kubectl apply -f "${K8S_MANIFEST_DIR}/f.yaml"
+                '''
             }
         }
     }
