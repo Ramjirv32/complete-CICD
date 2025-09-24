@@ -45,7 +45,7 @@ const recipeSchema = mongoose.Schema({
 const Recipe = mongoose.model("Recipe", recipeSchema);
 
 app.get("/", (req, res) => {
-  res.send("Recipe API is running... this is Demo after deployment  Ramji");
+  res.send("Recipe API is running... this is DevOps CD demo");
 });
 
 app.post("/api/recipes", (req, res) => {
