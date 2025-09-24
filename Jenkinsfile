@@ -85,6 +85,7 @@ pipeline {
             }
         }
 
+// k/
   stage("Deploy to Local Kubernetes") {
 stage("Deploy to Local Kubernetes") {
     steps {
