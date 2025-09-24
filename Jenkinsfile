@@ -1,6 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_USER = "ramjirv3217"
+        DOCKER_PASS = "Kpr@23112005"
+        SONAR_TOKEN = "sqa_71205c43f8c263e313ca3c193a82ed20faff52af"
+        SONAR_HOST = "http://localhost:9000"
+    }
+
     stages {
         stage('SCM Checkout') {
             steps {
@@ -8,7 +15,7 @@ pipeline {
             }
         }
 
-        stage("Backend local test") {
+        stage("Backend Tests") {
             steps {
                 dir('backend') {
                     sh 'rm -rf package-lock.json'
@@ -18,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Building Frontend') {
+        stage('Frontend Build') {
             steps {
                 dir('frontend') {
                     sh 'rm -rf package-lock.json'
@@ -28,10 +35,10 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis - Backend') {
+        stage('SonarQube Analysis') {
             steps {
-                script {
-                    dir("backend") {
+                dir('backend') {
+                    withEnv(["SONAR_TOKEN=${SONAR_TOKEN}"]) {
                         sh '''
                             export NVM_DIR="$HOME/.nvm"
                             if [ -s "$NVM_DIR/nvm.sh" ]; then
@@ -40,35 +47,43 @@ pipeline {
                             else
                                 export PATH="/home/ramji/.nvm/versions/node/v22.19.0/bin:$PATH"
                             fi
-                            which sonar-scanner
-                            sonar-scanner --version
-                            sonar-scanner \\
-                              -Dsonar.projectKey=backend-first \\
-                              -Dsonar.sources=. \\
-                              -Dsonar.host.url=http://localhost:9000 \\
-                              -Dsonar.token=sqa_71205c43f8c263e313ca3c193a82ed20faff52af
+
+                            sonar-scanner \
+                              -Dsonar.projectKey=backend-first \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=${SONAR_HOST} \
+                              -Dsonar.token=${SONAR_TOKEN}
                         '''
                     }
                 }
             }
         }
 
-        stage("Building Docker for Backend and Pushing to DockerHub") {
+        stage("Build & Push Backend Docker Image") {
             steps {
                 dir('backend') {
-                    sh 'docker build -t ramjirv3217/backend-image:latest .'
-                    sh 'docker login -u "ramjirv3217" -p "Kpr@23112005"'
-                    sh 'docker push ramjirv3217/backend-image:latest'
+                    sh 'docker build -t ${DOCKER_USER}/backend-image:latest .'
+                    sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}'
+                    sh 'docker push ${DOCKER_USER}/backend-image:latest'
                 }
             }
         }
 
-        stage("Building Docker for Frontend and Pushing to DockerHub") {
+        stage("Build & Push Frontend Docker Image") {
             steps {
                 dir('frontend') {
-                    sh 'docker build -t ramjirv3217/frontend-image:latest .'
-                    sh 'docker login -u "ramjirv3217" -p "Kpr@23112005"'
-                    sh 'docker push ramjirv3217/frontend-image:latest'
+                    sh 'docker build -t ${DOCKER_USER}/frontend-image:latest .'
+                    sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}'
+                    sh 'docker push ${DOCKER_USER}/frontend-image:latest'
+                }
+            }
+        }
+
+        stage("Deploy to Kubernetes") {
+            steps {
+                dir('k8s') {
+                    sh 'kubectl apply -f b.yaml'
+                    sh 'kubectl apply -f f.yaml'
                 }
             }
         }
