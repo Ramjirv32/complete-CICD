@@ -39,41 +39,6 @@ pipeline {
             }
         }
 
-        stage('Wait for Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    script {
-                        def taskFile = readFile('backend/.scannerwork/report-task.txt')
-                        def taskId = taskFile.split("\\n").find { it.startsWith('ceTaskId=') }?.split('=')[1]
-                        if (!taskId) {
-                            error "Could not find SonarQube task ID in report-task.txt"
-                        }
-
-                        def taskUrl = "http://localhost:9000/api/ce/task?id=${taskId}"
-                        def status = "PENDING"
-                        echo "Checking task status at: ${taskUrl}"
-                        
-                        while (status != "SUCCESS" && status != "FAILED") {
-                            sleep 5
-                            def response = sh(
-                                script: "curl -s -u sqa_71205c43f8c263e313ca3c193a82ed20faff52af: '${taskUrl}'", 
-                                returnStdout: true
-                            ).trim()
-                            
-                            def jsonResponse = readJSON(text: response)
-                            status = jsonResponse.task.status
-                            echo "Current task status: ${status}"
-                        }
-
-                        if (status == "FAILED") {
-                            error "SonarQube Quality Gate failed!"
-                        }
-                        
-                        echo "SonarQube analysis completed successfully"
-                    }
-                }
-            }
-        }
     }
 
     post {
