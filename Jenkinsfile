@@ -27,12 +27,12 @@ pipeline {
                             which sonar-scanner
                             sonar-scanner --version
                             
-                            # Run the analysis
+                            # Run the analysis with the new working token
                             sonar-scanner \\
                               -Dsonar.projectKey=backend-first \\
                               -Dsonar.sources=. \\
                               -Dsonar.host.url=http://localhost:9000 \\
-                              -Dsonar.token=sqp_15da2dada419712d578bc42619572ae7f5168f03
+                              -Dsonar.token=sqa_71205c43f8c263e313ca3c193a82ed20faff52af
                         '''
                     }
                 }
@@ -56,7 +56,7 @@ pipeline {
                         while (status != "SUCCESS" && status != "FAILED") {
                             sleep 5
                             def response = sh(
-                                script: "curl -s -u sqp_15da2dada419712d578bc42619572ae7f5168f03: '${taskUrl}'", 
+                                script: "curl -s -u sqa_71205c43f8c263e313ca3c193a82ed20faff52af: '${taskUrl}'", 
                                 returnStdout: true
                             ).trim()
                             
@@ -81,7 +81,7 @@ pipeline {
             echo "Backend SonarQube stage completed"
         }
         success {
-            echo "Backend SonarQube analysis and Quality Gate succeeded"
+            echo " Backend SonarQube analysis and Quality Gate succeeded"
         }
         failure {
             echo "Backend SonarQube analysis failed"
